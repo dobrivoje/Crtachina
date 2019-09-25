@@ -11,4 +11,5 @@ Knowledge used :
 7. https://stackoverflow.com/questions/16650419/draw-in-canvas-by-finger-android/41135685#41135685
 
 and last but not least :)
+
 8. https://stackoverflow.com/questions/16650419/draw-in-canvas-by-finger-android/41135685#41135685
