@@ -6,13 +6,17 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
 import org.superbapps.android.crtachina.helpers.PalleteTools;
 
 import static java.lang.Math.PI;
+import static java.lang.Math.atan;
+import static java.lang.Math.cos;
+import static java.lang.Math.pow;
+import static java.lang.Math.sin;
+import static java.lang.Math.sqrt;
 
 public class DrawingView extends View {
 	private static final String TAG = "DrawingView";
@@ -25,8 +29,8 @@ public class DrawingView extends View {
 	private Paint  mBitmapPaint;
 
 	private Paint mPaint;
-	private float startX, startY;
-	private float endX, endY;
+	private float X1, Y1;
+	private float X2, Y2;
 	private static final float TOUCH_TOLERANCE = 4;
 
 	// pointer = a shape (little circle) which we draw with
@@ -116,20 +120,20 @@ public class DrawingView extends View {
 	private void touchStart(float x, float y) {
 		mPath.reset();
 		mPath.moveTo( x, y );
-		endX = startX = x;
-		endY = startY = y;
+		X2 = X1 = x;
+		Y2 = Y1 = y;
 	}
 
 	private void touchMove(float x, float y) {
-		float dx = Math.abs( x - endX );
-		float dy = Math.abs( y - endY );
+		float dx = Math.abs( x - X2 );
+		float dy = Math.abs( y - Y2 );
 		if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
 			// actual drawing
 			drawingToolSelector( x, y );
 			// end of actual drawing
 
-			endX = x;
-			endY = y;
+			X2 = x;
+			Y2 = y;
 			pointerPath.reset();
 			pointerPath.addCircle( x, y, 15, Path.Direction.CCW );
 		}
@@ -137,7 +141,7 @@ public class DrawingView extends View {
 
 	private void touchUp() {
 		// actual drawing
-		drawingToolSelector( endX, endY );
+		drawingToolSelector( X2, Y2 );
 		// end of actual drawing
 
 		mPaint.setAlpha( 255 );
@@ -153,57 +157,66 @@ public class DrawingView extends View {
 
 		switch (drawingShape) {
 		case FREE_HAND:
-			mPath.quadTo( endX, endY, x, y );
+			mPath.quadTo( X2, Y2, x, y );
 			break;
 		case LINE:
 			mPath.reset();
-			mPath.moveTo( startX, startY );
+			mPath.moveTo( X1, Y1 );
 			mPath.lineTo( x, y );
 			break;
 		case CIRCLE:
 			mPath.reset();
-			mPath.moveTo( startX, startY );
-			mPath.addCircle( startX, startY, radius(), Path.Direction.CW );
+			mPath.moveTo( X1, Y1 );
+			mPath.addCircle( X1, Y1, radius(), Path.Direction.CW );
 			break;
 		case RECTANGLE:
 			mPath.reset();
-			mPath.addRect( startX, startY, endX, endY, Path.Direction.CW );
+			mPath.addRect( X1, Y1, X2, Y2, Path.Direction.CW );
 			break;
 		case ARROW:
 			mPath.reset();
-			mPath.moveTo( startX, startY );
-			mPath.lineTo( endX, endY );
+			mPath.moveTo( X1, Y1 );
+			mPath.lineTo( X2, Y2 );
 
-			float L2 = radius() < 50 ? radius() : 50;
+			float L = radius();
+			float L3 = L < 50 ? L : 50;
 
-			float userDefinedArrowAngle = (float) (PI / 3);
-			float arrowAngle = (float) (PI / 2 - userDefinedArrowAngle);
+			// userDefinedArrowAngle :
+			float alpha = (float) (PI / 6);
 
-			double thetha = Math.atan( (endY - startY) / (endX - startX) );
-			Log.i( TAG, "ugao : " + thetha * 180 / PI );
+			// dinamicaly changing agle :
+			double thetha = atan( (Y2 - Y1) / (X2 - X1) );
 
-			float ugao;
-			if (thetha > -PI / 2 && thetha < +PI / 2) {
-				thetha = PI + thetha;
-				ugao = (float) (arrowAngle - thetha);
-			} else {
-				ugao = (float) (arrowAngle + thetha);
-				Log.i( TAG, "ugao2 : " + ugao );
-			}
+			// pol coord system :
+			double beta = atan( L3 / (L - L3 * cos( alpha )) );
+			double r = (L - L3 * cos( alpha )) / cos( beta );
 
-			float x4 = (float) (endX + L2 * Math.cos( ugao ));
-			float y4 = (float) (endY - L2 * Math.sin( ugao ));
+			float x3 = (float) (X1 + (r * cos( thetha - beta )));
+			float y3 = (float) (Y1 - (r * sin( PI + thetha - beta )));
+
+			float x4 = (float) (X1 + (r * cos( thetha + beta )));
+			float y4 = (float) (Y1 - (r * sin( PI + thetha + beta )));
+
+			mPath.lineTo( x3, y3 );
+			mPath.lineTo( X2, Y2 );
 			mPath.lineTo( x4, y4 );
-
 			break;
+
+		default:
+			mPath.reset();
+			mPath.moveTo( X1, Y1 );
+
+			float r1 = radius();
+			double teta = atan( (Y2 - Y1) / (X2 - X1) );
+
+			float xx = (float) (X1 + r1 * cos( teta ));
+			float yy = (float) (Y1 - r1 * sin( PI + teta ));
+			mPath.lineTo( xx, yy );
 		}
 	}
 
 	private float radius() {
-		float deltaX = Math.abs( endX - startX );
-		float deltaY = Math.abs( endY - startY );
-		float radius = (float) Math.sqrt( deltaX * deltaX + deltaY * deltaY );
-		return radius;
+		return (float) sqrt( pow( X2 - X1, 2 ) + pow( Y2 - Y1, 2 ) );
 	}
 }
 

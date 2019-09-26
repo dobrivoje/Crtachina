@@ -5,5 +5,6 @@ public enum PalleteTools {
 	LINE,
 	CIRCLE,
 	RECTANGLE,
-	ARROW;
+	ARROW,
+	DEFAULT;
 }
