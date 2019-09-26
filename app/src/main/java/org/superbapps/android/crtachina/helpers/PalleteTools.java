@@ -3,5 +3,7 @@ package org.superbapps.android.crtachina.helpers;
 public enum PalleteTools {
 	FREE_HAND,
 	LINE,
-	CIRCLE;
+	CIRCLE,
+	RECTANGLE,
+	ARROW;
 }

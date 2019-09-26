@@ -6,16 +6,16 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
 import org.superbapps.android.crtachina.helpers.PalleteTools;
 
-import static org.superbapps.android.crtachina.helpers.PalleteTools.CIRCLE;
-import static org.superbapps.android.crtachina.helpers.PalleteTools.FREE_HAND;
-import static org.superbapps.android.crtachina.helpers.PalleteTools.LINE;
+import static java.lang.Math.PI;
 
 public class DrawingView extends View {
+	private static final String TAG = "DrawingView";
 
 	Context context;
 
@@ -40,7 +40,7 @@ public class DrawingView extends View {
 		super( ctx );
 		context = ctx;
 
-		drawingShape = CIRCLE;
+		drawingShape = PalleteTools.ARROW;
 		initGUI();
 	}
 
@@ -86,8 +86,8 @@ public class DrawingView extends View {
 		super.onDraw( canvas );
 
 		canvas.drawPath( pointerPath, pointerPaint );
-		canvas.drawBitmap( mBitmap, 0, 0, mBitmapPaint );
 		canvas.drawPath( mPath, mPaint );
+		canvas.drawBitmap( mBitmap, 0, 0, mBitmapPaint );
 	}
 
 	@Override
@@ -152,6 +152,9 @@ public class DrawingView extends View {
 		mPaint.setAlpha( 60 );
 
 		switch (drawingShape) {
+		case FREE_HAND:
+			mPath.quadTo( endX, endY, x, y );
+			break;
 		case LINE:
 			mPath.reset();
 			mPath.moveTo( startX, startY );
@@ -162,16 +165,44 @@ public class DrawingView extends View {
 			mPath.moveTo( startX, startY );
 			mPath.addCircle( startX, startY, radius(), Path.Direction.CW );
 			break;
-		case FREE_HAND:
-			mPath.quadTo( endX, endY, (x + endX) / 2, (y + endY) / 2 );
+		case RECTANGLE:
+			mPath.reset();
+			mPath.addRect( startX, startY, endX, endY, Path.Direction.CW );
+			break;
+		case ARROW:
+			mPath.reset();
+			mPath.moveTo( startX, startY );
+			mPath.lineTo( endX, endY );
+
+			float L2 = radius() < 50 ? radius() : 50;
+
+			float userDefinedArrowAngle = (float) (PI / 3);
+			float arrowAngle = (float) (PI / 2 - userDefinedArrowAngle);
+
+			double thetha = Math.atan( (endY - startY) / (endX - startX) );
+			Log.i( TAG, "ugao : " + thetha * 180 / PI );
+
+			float ugao;
+			if (thetha > -PI / 2 && thetha < +PI / 2) {
+				thetha = PI + thetha;
+				ugao = (float) (arrowAngle - thetha);
+			} else {
+				ugao = (float) (arrowAngle + thetha);
+				Log.i( TAG, "ugao2 : " + ugao );
+			}
+
+			float x4 = (float) (endX + L2 * Math.cos( ugao ));
+			float y4 = (float) (endY - L2 * Math.sin( ugao ));
+			mPath.lineTo( x4, y4 );
+
 			break;
 		}
 	}
 
 	private float radius() {
 		float deltaX = Math.abs( endX - startX );
-		float deltay = Math.abs( endY - startY );
-		float radius = Math.max( deltaX, deltay );
+		float deltaY = Math.abs( endY - startY );
+		float radius = (float) Math.sqrt( deltaX * deltaX + deltaY * deltaY );
 		return radius;
 	}
 }
